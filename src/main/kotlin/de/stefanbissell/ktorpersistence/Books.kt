@@ -67,12 +67,13 @@ class Books(
                 )
             }
         ).rows[0][0].toString()
-        sendQuery(
+        sendPreparedStatement(
             """
                 UPDATE test
                 SET search = (to_tsvector(title) || to_tsvector(author) || to_tsvector(synopsis))
-                WHERE id = '$id';
-            """.trimIndent()
+                WHERE id = ?;
+            """.trimIndent(),
+            listOf(id)
         )
     }
 
