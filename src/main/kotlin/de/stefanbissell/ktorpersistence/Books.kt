@@ -14,13 +14,26 @@ class Books(
 
     private val faker = Faker()
 
+    suspend fun getBook(id: String) =
+        sendPreparedStatement(
+            """
+                SELECT id, title, author, synopsis, stock 
+                FROM test
+                WHERE id = ?;
+            """.trimIndent(),
+            listOf(id)
+        )
+            .rows
+            .firstOrNull()
+            ?.joinToString(separator = " - ")
+
     suspend fun searchBooks(query: String) =
         sendPreparedStatement(
             """
-            SELECT id, title, author, synopsis, stock 
-            FROM test
-            WHERE search @@ to_tsquery(?);
-        """.trimIndent(),
+                SELECT id, title, author, synopsis, stock 
+                FROM test
+                WHERE search @@ to_tsquery(?);
+            """.trimIndent(),
             listOf(query)
         )
             .rows
@@ -34,10 +47,10 @@ class Books(
     suspend fun addBook() {
         val id = sendPreparedStatement(
             """
-            INSERT INTO test (id, title, author, synopsis, stock) 
-            VALUES (?, ?, ?, ?, ?)
-            RETURNING id;
-        """.trimIndent(),
+                INSERT INTO test (id, title, author, synopsis, stock) 
+                VALUES (?, ?, ?, ?, ?)
+                RETURNING id;
+            """.trimIndent(),
             faker.book().let {
                 listOf<Any>(
                     UUID.randomUUID().toString(),
@@ -50,25 +63,25 @@ class Books(
         ).rows[0][0].toString()
         sendQuery(
             """
-            UPDATE test
-            SET search = (to_tsvector(title) || to_tsvector(author) || to_tsvector(synopsis))
-            WHERE id = '$id';
-        """.trimIndent()
+                UPDATE test
+                SET search = (to_tsvector(title) || to_tsvector(author) || to_tsvector(synopsis))
+                WHERE id = '$id';
+            """.trimIndent()
         )
     }
 
     suspend fun createBooksTable() {
         sendQuery(
             """
-            CREATE TABLE IF NOT EXISTS test (
-                id varchar PRIMARY KEY,
-                title varchar,
-                author varchar,
-                synopsis varchar,
-                stock integer,
-                search tsvector DEFAULT ''::tsvector
-            );
-        """.trimIndent()
+                CREATE TABLE IF NOT EXISTS test (
+                    id varchar PRIMARY KEY,
+                    title varchar,
+                    author varchar,
+                    synopsis varchar,
+                    stock integer,
+                    search tsvector DEFAULT ''::tsvector
+                );
+            """.trimIndent()
         )
     }
 
