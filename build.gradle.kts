@@ -4,6 +4,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 val junit_version: String by project
 val kotlin_coroutine_version: String by project
+val kotlin_serialization_version: String by project
 val ktor_version: String by project
 val logback_version: String by project
 val strikt_version: String by project
@@ -11,6 +12,7 @@ val strikt_version: String by project
 plugins {
     application
     kotlin("jvm")
+    kotlin("plugin.serialization")
 }
 
 application {
@@ -30,6 +32,7 @@ dependencies {
     implementation("io.ktor:ktor-server-netty:$ktor_version")
     implementation("ch.qos.logback:logback-classic:$logback_version")
     implementation("io.ktor:ktor-server-core:$ktor_version")
+    implementation("io.ktor:ktor-serialization:$ktor_version")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:$kotlin_coroutine_version")
     implementation("org.testcontainers:postgresql:1.15.2")
     implementation("com.github.jasync-sql:jasync-postgresql:1.1.7")

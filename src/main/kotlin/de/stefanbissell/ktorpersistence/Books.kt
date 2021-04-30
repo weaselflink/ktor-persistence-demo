@@ -1,10 +1,13 @@
 package de.stefanbissell.ktorpersistence
 
 import com.github.jasync.sql.db.QueryResult
+import com.github.jasync.sql.db.RowData
 import com.github.jasync.sql.db.pool.ConnectionPool
 import com.github.jasync.sql.db.postgresql.PostgreSQLConnection
 import com.github.javafaker.Faker
 import kotlinx.coroutines.future.await
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.ListSerializer
 import java.util.UUID
 import kotlin.random.Random
 
@@ -14,7 +17,13 @@ class Books(
 
     private val faker = Faker()
 
-    suspend fun getBook(id: String) =
+    suspend fun getAll() =
+        sendPreparedStatement("SELECT id, title, author, synopsis, stock FROM test;")
+            .rows
+            .asBooks()
+            .toJson()
+
+    suspend fun get(id: String) =
         sendPreparedStatement(
             """
                 SELECT id, title, author, synopsis, stock 
@@ -25,9 +34,10 @@ class Books(
         )
             .rows
             .firstOrNull()
-            ?.joinToString(separator = " - ")
+            ?.asBook()
+            ?.toJson()
 
-    suspend fun searchBooks(query: String) =
+    suspend fun search(query: String) =
         sendPreparedStatement(
             """
                 SELECT id, title, author, synopsis, stock 
@@ -37,12 +47,8 @@ class Books(
             listOf(query)
         )
             .rows
-            .joinToString(separator = " \n") { it.joinToString(separator = " - ") }
-
-    suspend fun getBooks() =
-        sendPreparedStatement("SELECT id, title, author, synopsis, stock FROM test;")
-            .rows
-            .joinToString(separator = " \n") { it.joinToString(separator = " - ") }
+            .asBooks()
+            .toJson()
 
     suspend fun addBook() {
         val id = sendPreparedStatement(
@@ -90,4 +96,31 @@ class Books(
 
     private suspend fun sendQuery(query: String): QueryResult =
         connectionPool.sendQuery(query).await()
+
+    private fun List<RowData>.asBooks() =
+        map {
+            it.asBook()
+        }
+
+    private fun RowData.asBook() =
+        Book(
+            id = get("id") as String,
+            title = get("title") as String,
+            author = get("author") as String,
+            synopsis = get("synopsis") as String,
+            stock = get("stock") as Int
+        )
 }
+
+@Serializable
+data class Book(
+    val id: String,
+    val title: String,
+    val author: String,
+    val synopsis: String,
+    val stock: Int
+) {
+    fun toJson(): String = configuredJson().encodeToString(serializer(), this)
+}
+
+fun List<Book>.toJson() = configuredJson().encodeToString(ListSerializer(Book.serializer()), this)
