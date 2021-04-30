@@ -18,7 +18,11 @@ class Books(
     private val faker = Faker()
 
     suspend fun getAll() =
-        sendPreparedStatement("SELECT id, title, author, synopsis, stock FROM test;")
+        sendPreparedStatement(
+            """
+                SELECT id, title, author, synopsis, stock 
+                FROM test;
+            """.trimIndent())
             .rows
             .asBooks()
             .toJson()
